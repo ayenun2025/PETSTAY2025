@@ -9,6 +9,8 @@ document.getElementById('left-button')?.addEventListener('click', () => {
 
 // Redirect to Admin Login via Cognito Hosted UI
 document.getElementById('right-button')?.addEventListener('click', () => {
+    sessionStorage.setItem("adminorigin", "1"); // set session storage flag
+    
   const clientId = window.PETSTAY_CONFIG.COGNITO_USER_POOL_CLIENT_ID;
   const domain = window.PETSTAY_CONFIG.COGNITO_DOMAIN;
   const redirectUri = encodeURIComponent(window.PETSTAY_CONFIG.REDIRECT_SIGN_IN_URL);
