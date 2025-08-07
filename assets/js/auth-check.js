@@ -14,7 +14,7 @@ const currentUrl = window.location.origin + window.location.pathname;
 const amplifyAuthConfig = {
   region: 'us-east-1', // Example: 'us-east-1'
   userPoolId: 'us-east-1_jaXO80Xah', //write your Cognito User Pool ID here
-  userPoolWebClientId: '3dpsa80ai1mrogcluofao2ejs', //write your Cognito User Pool Client ID here
+  userPoolWebClientId: '3dpsa80ai1mrogcluofao2ejsk', //write your Cognito User Pool Client ID here
   oauth: {
     domain: 'us-east-1jaxo80xah.auth.us-east-1.amazoncognito.com', //write your Cognito Domain here
     scope: ['email', 'openid', 'phone'], // OAuth scopes
