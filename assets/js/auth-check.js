@@ -1,4 +1,4 @@
-// File: assets/js/auth-check.js
+//newnew
 
 console.log("auth-check.js loaded");
 
@@ -13,18 +13,18 @@ const currentUrl = window.location.origin + window.location.pathname;
 // Define Amplify Auth configuration using placeholders
 const amplifyAuthConfig = {
   region: 'us-east-1', // Example: 'us-east-1'
-  userPoolId: 'us-east-1_jaXO80Xah', //write your Cognito User Pool ID here
-  userPoolWebClientId: '3dpsa80ai1mrogcluofao2ejsk', //write your Cognito User Pool Client ID here
-  oauth: {
-    domain: 'us-east-1jaxo80xah.auth.us-east-1.amazoncognito.com', //write your Cognito Domain here
+  userPoolId: 'us-east-1_jaXO80Xah', // Cognito User Pool ID
+  userPoolWebClientId: '3dpsa80ai1mrogcluofao2ejsk', // Cognito User Pool Client ID
+    oauth: {
+    domain: 'us-east-1jaxo80xah.auth.us-east-1.amazoncognito.com', // Cognito Domain
     scope: ['email', 'openid', 'phone'], // OAuth scopes
-    redirectSignIn: 'https://main.d2xdpgtdqzn9rk.amplifyapp.com/admin-frontend/post-login.html', //write your Redirect Sign In URL here
-    redirectSignOut: 'https://main.d2xdpgtdqzn9rk.amplifyapp.com/index.html', //write your Redirect Sign Out URL here
-    responseType: 'code', // OAuth flow to use (code for authorization code grant)
+    redirectSignIn: 'https://main.d2xdpgtdqzn9rk.amplifyapp.com/admin-frontend/post-login.html', // Redirect Sign In URL 
+    redirectSignOut: 'https://main.d2xdpgtdqzn9rk.amplifyapp.com/index.html', // Redirect Sign Out URL
+    responseType: 'code', // OAuth flow (authorization code grant)
   }
 };
 
-// Safety checks make sure Amplify, Auth, and Hub are available
+// Safety checks
 if (!Amplify || typeof Amplify.configure !== 'function') {
   console.error("Amplify not available or misconfigured.");
 } else if (!Auth || !Hub) {
@@ -67,7 +67,7 @@ if (!Amplify || typeof Amplify.configure !== 'function') {
 
       // Update the admin email display in the DOM
       updateAdminEmail(email);
-
+      // Clean up query params if came back from Cognito
       // If we came back from Cognito, clean up query params
       if (urlParams.get("from") === "cognito") {
         const cleanUrl = window.location.origin + window.location.pathname;
@@ -93,7 +93,7 @@ if (!Amplify || typeof Amplify.configure !== 'function') {
         console.warn("Avoiding redirect loop after login");
         return;
       }
-
+      // Redirect to Cognito Hosted UI login
       // Build Cognito Hosted UI login URL and redirect to login
       const { domain, redirectSignIn } = amplifyAuthConfig.oauth;
       const clientId = amplifyAuthConfig.userPoolWebClientId;
@@ -134,7 +134,8 @@ if (!Amplify || typeof Amplify.configure !== 'function') {
       console.warn("Element #adminEmailDropdown not found in DOM");
     }
   }
-
+// Expose checkUser globally so loader can call it
+    window.checkUser = checkUser;
   /**
    * Listen for Amplify Auth events.
    * If user signs in, re-check user and show tokens in console for debugging.
@@ -143,7 +144,7 @@ if (!Amplify || typeof Amplify.configure !== 'function') {
     const { payload } = data;
     if (payload.event === 'signIn') {
       console.log("Auth event: signIn");
-      checkUser(true); // Re-check user details
+      checkUser(true); 
 
       // Also log token payloads for debugging
       try {
@@ -185,7 +186,7 @@ if (!Amplify || typeof Amplify.configure !== 'function') {
         window.location.replace(amplifyAuthConfig.oauth.redirectSignOut);
       });
   };
-
+// Attach sign-out handler after DOM ready
   /**
    * When the page loads, attach the sign-out button event listener if found.
    */
@@ -207,4 +208,56 @@ if (!Amplify || typeof Amplify.configure !== 'function') {
       retryAttachSignOut();
     }, 500);
   });
+  }
+
+// The dynamic loader function — **outside** the guard
+function loadDashboardAndAuth() {
+  const dashboardScript = document.createElement('script');
+  dashboardScript.src = '/assets/js/iot-dashboard.js';
+  dashboardScript.onload = () => {
+    if (!window.__PETSTAY_AUTH_CHECK_LOADED__) {
+      const authScript = document.createElement('script');
+      authScript.src = '/assets/js/auth-check.js';
+      authScript.onload = () => {
+        window.__PETSTAY_AUTH_CHECK_LOADED__ = true;
+
+        const Auth = window.Amplify?.Auth;
+        if (!Auth) return;
+
+        Auth.currentAuthenticatedUser()
+          .then(() => {
+            console.log("User is authenticated — initializing IoT...");
+            if (typeof connectToIoTDashboard === 'function') {
+              connectToIoTDashboard();
+            }
+
+            if (typeof window.checkUser === 'function') {
+              window.checkUser(true); // only update UI email, no redirect
+            } else {
+              console.warn("checkUser() not defined after auth-check.js load.");
+            }
+          })
+          .catch(err => console.warn("User not signed in:", err.message));
+      };
+      authScript.onerror = () => console.error('Failed to load auth-check.js');
+      document.body.appendChild(authScript);
+    } else {
+      console.log("auth-check.js already loaded — skipping");
+
+      const Auth = window.Amplify?.Auth;
+      if (Auth) {
+        Auth.currentAuthenticatedUser()
+          .then(() => {
+            if (typeof window.checkUser === 'function') {
+              window.checkUser(true);
+            }
+          })
+          .catch(() => { });
+      }
+    }
+  };
+  dashboardScript.onerror = () => console.error('Failed to load iot-dashboard.js');
+  document.body.appendChild(dashboardScript);
 }
+
+
